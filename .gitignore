@@ -13,4 +13,10 @@ Images/
 *.png
 *.html
 *.pdf
+*.suo
+*.db
+*.aux
+*.bbl
+*.blg
+*.gz
 
