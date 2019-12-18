@@ -1,31 +1,81 @@
-
-install.packages("cplots")
+library("here")
+source(here("..","R_files","posPlots.r"))
 library("cplots")
 library("circular")
+library("ggplot2")
+library("tidyverse")
+library("truncnorm")
+library("reshape2")
+seasons<-c("winter", "spring", "summer", "autumn")
 
-randCirc<-rwrappednormal(10000,mu = circular(0),rho = 0.3)
-
+# Time intervals
 weeks<-as.circular(seq(0,2*pi,length.out = 48))
-ResourceAbundExpect<-rwrappednormal(48,mu = circular(0),rho = 0.1)
+timeRang<-as.circular(seq(0,2*pi,length.out = 100))
+# Resource range
+resorRange<-seq(0,1,length.out = 48)
 
-plot(randCirc, pch=16,
-     col="blue", stack=T, shrink=1.2, bins=720, ticks=T)
-chist(randCirc,radius = 0.2)
+contourData<-do.call(rbind,lapply(weeks,FUN = resourDist,
+                                  resource=resorRange,scalar=1,sigma=0.5,
+                                  kappa=2))
+par(plt=posPlot())
+filled.contour(
+  x = as.numeric(weeks),
+  y = resorRange,
+  z = contourData,
+  plot.axes = {
+    axis(1,
+         at = seq(0, 2 * pi, length.out = 5)[1:4],
+         labels=seasons)
+    axis(2, at = seq(0, 1, length.out = 5))
+  }
+)
 
-str(pigeons)
+randResour <-
+  sapply(
+    as.circular(seq(0, 2 * pi, length.out = 24)),
+    rresourDist,
+    scalar = 1,
+    sigma = 0.1,
+    kappa = 2
+  )
 
-plot(dvonmises(circular(seq(0,2*pi,length.out = 100)),mu = circular(pi),kappa = 1)
-     ~seq(0,2*pi,length.out = 100),xaxt="n")
-axis(1,at = weeks,labels = 1:48)
+oneSample<-data.frame(randResour,time=as.circular(seq(0,2*pi,length.out = 24)))
 
-resourDist<-function(time,resource,mut=pi,scalar=10,kappa=10,sigma=0.1){
-  mu<-scalar*dvonmises(circular(time),mu = mut,kappa = kappa)
-  prob<-dnorm(resource,mu,sd = sigma)
-  return(prob)
-}
+oneSample$EnvCue<-EnvCue(oneSample$randResour,sigma = 0.1)
+longOneSample<-dcast(oneSample,)
 
-dvonmises(circular(pi),mu = pi,kappa = 10)
-dnorm(1.24,1.24)
-resourDist(time=pi,resource = 6,mut = pi,10,sigma = 0.8,scalar = 10)
-5*dvonmises(circular(pi),mu = pi,kappa = 10)
+with(oneSample,{
+  par(plt=posPlot(),las=1)
+  matplot(y=cbind(randResour,EnvCue),x=time,type="l",lwd = 3,ylab = "",
+          xaxt="n",lty = 1)
+  axis(1,at=seq(0,2*pi,length.out = 5)[1:4],labels = seasons)
+  legend("topright",legend = c("Resource abundance",
+                               "Environmental cue"),
+         lwd=3,col=c("black","red"))
+})
 
+
+p <- ggplot(oneSample, aes(x=time, y=randResour,fill=)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+  
+  # This add the bars with a blue color
+  geom_bar(stat="identity", fill=alpha("blue", 0.3)) +
+  
+  # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
+  ylim(-1,1.5) +
+  
+  # Custom the theme: no axis title and no cartesian grid
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-2,4), "cm")     
+    # This remove unnecessary margin around plot
+  ) +
+  
+  # This makes the coordinate polar instead of cartesian.
+  coord_polar(start = 0)
+p
+
+
+  
