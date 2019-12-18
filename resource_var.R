@@ -1,25 +1,27 @@
 library("here")
 source(here("..","R_files","posPlots.r"))
+source(here("AccFunc.r"))
 library("cplots")
 library("circular")
 library("ggplot2")
 library("tidyverse")
 library("truncnorm")
+library("data.table")
 library("reshape2")
 seasons<-c("winter", "spring", "summer", "autumn")
 
 # Time intervals
-weeks<-as.circular(seq(0,2*pi,length.out = 48))
-timeRang<-as.circular(seq(0,2*pi,length.out = 100))
+nYearInt<-48
+timeRang<-as.circular(seq(0,2*pi,length.out = nYearInt))
 # Resource range
-resorRange<-seq(0,1,length.out = 48)
+resorRange<-seq(0,1,length.out = nYearInt)
 
-contourData<-do.call(rbind,lapply(weeks,FUN = resourDist,
-                                  resource=resorRange,scalar=1,sigma=0.5,
-                                  kappa=2))
+contourData<-do.call(rbind,lapply(timeRang,FUN = dresourDist,
+                                  resource=resorRange,scalar=2,sigma=0.1,
+                                  kappa=1))
 par(plt=posPlot())
 filled.contour(
-  x = as.numeric(weeks),
+  x = as.numeric(timeRang),
   y = resorRange,
   z = contourData,
   plot.axes = {
@@ -32,17 +34,24 @@ filled.contour(
 
 randResour <-
   sapply(
-    as.circular(seq(0, 2 * pi, length.out = 24)),
+    as.circular(seq(0, 2 * pi, length.out = 12)),
     rresourDist,
     scalar = 1,
     sigma = 0.1,
     kappa = 2
   )
 
-oneSample<-data.frame(randResour,time=as.circular(seq(0,2*pi,length.out = 24)))
-
+oneSample<-data.table(randResour,time=as.circular(seq(0,2*pi,length.out = 12)))
 oneSample$EnvCue<-EnvCue(oneSample$randResour,sigma = 0.1)
-longOneSample<-dcast(oneSample,)
+oneSample$month<-c("January","February","March","April","May","June","July",
+                   "August","September","October","November","December")
+oneSample[,month:=as.integer(month)]
+oneSample[,time:=NULL]
+str(oneSample)
+
+longOneSample<-melt(oneSample,id.vars = "month",
+                    variable.name = "Measure")
+longOneSample[,month:=as.circular(seq(0,2*pi,length.out = 12))[month]]
 
 with(oneSample,{
   par(plt=posPlot(),las=1)
@@ -55,13 +64,15 @@ with(oneSample,{
 })
 
 
-p <- ggplot(oneSample, aes(x=time, y=randResour,fill=)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+BarPlotSolo <-
+  ggplot(longOneSample, aes(x = month, y = value, fill = Measure)) +       
+  # Note that id is a factor. If x is numeric, there is some space between the first bar
   
   # This add the bars with a blue color
-  geom_bar(stat="identity", fill=alpha("blue", 0.3)) +
+  geom_bar(stat = "identity", fill = alpha("blue", 0.3)) +
   
   # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
-  ylim(-1,1.5) +
+  ylim(-1, 1.5) +
   
   # Custom the theme: no axis title and no cartesian grid
   theme_minimal() +
@@ -69,7 +80,7 @@ p <- ggplot(oneSample, aes(x=time, y=randResour,fill=)) +       # Note that id i
     axis.text = element_blank(),
     axis.title = element_blank(),
     panel.grid = element_blank(),
-    plot.margin = unit(rep(-2,4), "cm")     
+    plot.margin = unit(rep(-2, 4), "cm")
     # This remove unnecessary margin around plot
   ) +
   
@@ -77,5 +88,39 @@ p <- ggplot(oneSample, aes(x=time, y=randResour,fill=)) +       # Note that id i
   coord_polar(start = 0)
 p
 
+p <- ggplot(longOneSample, aes(x=month, y=value, fill=)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+  geom_bar(stat="identity", fill=alpha("green", 0.3)) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm") 
+  ) +
+  coord_polar(start = 0) + 
+  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
 
+labels<-data.frame(y=seq(-0.5,0.5,length.out = 5),
+                   label=as.character(seq(-0.5,0.5,length.out = 5)))
+
+ggplot()+
+    geom_bar(data=longOneSample, aes(fill=Measure, y=value, x=month),
+position="dodge", stat="identity")+
+  scale_fill_viridis(discrete = T)+
+      coord_polar(start = 0)+
+    ylim(-0.5,1)+  theme_minimal()  +theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-2, 4), "cm")
+    # This remove unnecessary margin around plot
+  ) +scale_fill_discrete(name="",
+                         breaks=c("randResour", "EnvCue"),
+                         labels=c("Resource abundance", "Environmental cue"))+
+  geom_text (data = labels,
+           aes(x = 0.5*pi, y = y, label = label),colour="black")
+  
+  
+  
   

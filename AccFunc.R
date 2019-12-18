@@ -6,7 +6,8 @@ library("truncnorm")
 
 dresourDist<-function(time,resource,mut=pi,scalar=5,kappa=10,sigma=0.1){
   mu<-scalar*dvonmises(circular(time),mu = mut,kappa = kappa)
-  prob<-dtruncnorm(resource,mu,sd = sigma,a = 0)
+  prob<-dtruncnorm(resource,mean=mu,sd = sigma,a = 0)
+  # prob<-dnorm(resource,mu,sd = sigma)
   return(prob)
 }
 
