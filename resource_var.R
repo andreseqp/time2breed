@@ -10,6 +10,8 @@ library("data.table")
 library("reshape2")
 seasons<-c("winter", "spring", "summer", "autumn")
 
+colbars<- c('#d7191c','#fdae61','#2b83ba')
+
 # Time intervals
 nYearInt<-48
 timeRang<-as.circular(seq(0,2*pi,length.out = nYearInt))
@@ -38,14 +40,14 @@ randResour <-
     rresourDist,
     scalar = 1,
     sigma = 0.1,
-    kappa = 2
+    kappa = 1
   )
 
 oneSample<-data.table(randResour,time=as.circular(seq(0,2*pi,length.out = 12)))
 oneSample$EnvCue<-EnvCue(oneSample$randResour,sigma = 0.1)
 oneSample$month<-c("January","February","March","April","May","June","July",
                    "August","September","October","November","December")
-oneSample[,month:=as.integer(month)]
+oneSample[,month:=as.factor(month)]
 oneSample[,time:=NULL]
 str(oneSample)
 
@@ -69,10 +71,10 @@ BarPlotSolo <-
   # Note that id is a factor. If x is numeric, there is some space between the first bar
   
   # This add the bars with a blue color
-  geom_bar(stat = "identity", fill = alpha("blue", 0.3)) +
+  geom_bar(stat = "identity", fill = alpha("blue", 0.6)) +
   
   # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
-  ylim(-1, 1.5) +
+  ylim(-0.5, 1.5) +
   
   # Custom the theme: no axis title and no cartesian grid
   theme_minimal() +
@@ -86,11 +88,31 @@ BarPlotSolo <-
   
   # This makes the coordinate polar instead of cartesian.
   coord_polar(start = 0)
+BarPlotSolo
 p
 
-p <- ggplot(longOneSample, aes(x=month, y=value, fill=)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
-  geom_bar(stat="identity", fill=alpha("green", 0.3)) +
-  ylim(-100,120) +
+
+
+ggplot(longOneSample, aes(month, value, fill=Measure)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+ 
+  coord_polar() + 
+  ylim(-0.2, 1.5)+
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(c(-0,-5,-5,-5), "cm"),
+    legend.position="top"
+  ) 
+  
+
+
+p <- ggplot(longOneSample, aes(x=month, y=value, fill=Measure)) +       
+  # Note that id is a factor. If x is numeric, there is some space between the first bar
+  geom_col(position = "dodge") +
+    ylim(-0.5,1.5) +
   theme_minimal() +
   theme(
     axis.text = element_blank(),
@@ -98,9 +120,8 @@ p <- ggplot(longOneSample, aes(x=month, y=value, fill=)) +       # Note that id 
     panel.grid = element_blank(),
     plot.margin = unit(rep(-1,4), "cm") 
   ) +
-  coord_polar(start = 0) + 
-  geom_text(data=label_data, aes(x=id, y=value+10, label=individual, hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
-
+  coord_polar(start = 0) 
+   
 labels<-data.frame(y=seq(-0.5,0.5,length.out = 5),
                    label=as.character(seq(-0.5,0.5,length.out = 5)))
 

@@ -11,6 +11,22 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Justification
 
+In natural populations, reproductive success depends on the availability of the 
+resources necessary for reproduction. Resources typically vary in space and time.
+Predicting the abundance of resources can be extremely important for organisms, particularly 
+for those that need time to prepare for a reproductive event. The spatial and 
+temporal variation in resource availability can be, to some extent, 
+predicted through environemental cues. For example, resource availability in the 
+temperate zones varies temporally with the seasons. Thus, 
+resource availability can be predicted by environmental cues that vary periodically 
+along the year, for instance photoperiod. Thus, in order to match, the physiological 
+processes required for reproduction with high abundance of resources, it makes sense for 
+organisms to use environmental correlates of resource abundance in their 
+reproductive desicions. This correlation between resource abundance and environmental
+cues is, however, not perfect. This means that, if individuals use environmental cues 
+to decide when to reproduce, on certain occassions the cues will provide erroneous information, 
+leading to a mismatch between reproduction and resource abundance. Furthermore, one expect 
+a certain level of error in the perception of evsironmental cues by individuals. 
 Individuals evolve the sensitivity to include in their decision making process of 
 when to breed the reproductive status of their conspecifics. We start with an asexual
 model. Where individuals can use an environmental cue to decide when, during the year, 
@@ -23,7 +39,7 @@ variation not predicted by the environmental cue, could potentially trigger indi
 breeding at the wrong time. Hence, individuals could improve their decision making by 
 taking into account the breeding status of their peers, which could potentially 
 improve the accuracy of their decision by pulling together individual and social information. 
-This flexibility comes with a potencial cost.  If all individuals respond to the social influence,
+This flexibility comes with a potencial cost. If all individuals respond to the social influence,
 breeding time might end up being overly concentrated in time, which, due to density dependence,
 might reduce the reproductive success. Thus, depending on the strength of the intra-specific
 competition, it might be better for individuals to respond less to their peers. 
@@ -41,8 +57,9 @@ reproductice success. Which opens up the question, what is the best strategy for
 male to decide when to become reproductively active?
 
 We aim to answer the above questions using a individual based model. In such model,
-individuals have genotypes that define their response to a environmental cue, as well 
+individuals have genotypes that define their response to an environmental cue, as well 
 as the reproductive status of other individuals. The decision of whether to breed at a particular  time is given the log odds equation from a logistic regression
+
 \begin{equation}
-	log\frac{p}{1-p}=\beta_0+
+	log\frac{p}{1-p}=\beta_0+e \beta_e+s \beta_s+
 \end{equation}
