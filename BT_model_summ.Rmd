@@ -16,7 +16,15 @@ header-includes:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
+library("here")
+source(here("..","R_files","posPlots.r"))
+source(here("AccFunc.r"))
+source(here("Aesth.r"))
+library("data.table")
+library("circular")
+library("ggplot2")
+library("cowplot")
 ```
 
 
@@ -61,6 +69,7 @@ abundance of reproductively active males even lower, such male might enjoy a hig
 reproductice success. Which opens up the question, what is the best strategy for a 
 male to decide when to become reproductively active?
 
+## The model
 
 In order to assess the effect that natural selection could have
 on the evolution of the desicion making mechanisms, we develop an evolutionary model. 
@@ -69,14 +78,87 @@ making process of when to breed the reproductive status of their conspecifics.
 We start with an asexual population. Individuals can use an environmental cue to decide when, 
 during the year, to breed. This environmental cue is partly correlated with the abundance of 
 resources along the season. Specifically, we let the mean abundance of resources 
-along the year be random variable determined by the Von Mises distribution [@mardia_directional_1999], 
+along the year be a random variable determined by the Von Mises distribution [@mardia_directional_1999], 
 which is a circular analogue of the normal distribution. By using the Von Mises distribution, 
 we assume that resources have one peak of abundance during the year. Also, by tuning 
 parameters $\kappa$ and $\mu$ in the distribution, we can control how high and spread 
-is the peak of resources, respectively. The actual abundance of resource 
-These resources are necessary to raise the offspring, 
-and thus reproductive success (or offspring survival) depends on the *per capita* 
-availability of resources. The perception of the environmental cue by each individual 
+is the peak of resources, respectively. The actual abundance of resource in a given time point 
+of the year, will be a random variable drawn from a normal distribution with mean equal to the
+draw of the Von Mises distribution, and a standard deviation given by the parameter $\sigma$. 
+In figure \ref{fig:resDistr}, we show the probalility distribution of the amount of 
+resources along the year, given by the two probability distributions mentioned earlier. 
+
+```{r fig1,echo=FALSE,warning=FALSE, fig.cap="\\label{fig:resDistr} Resource distribution along the year. A shows the probability distribution. B shows an example of the correlation of resources and environmental cue."}
+
+# Time intervals
+nYearInt<-48
+timeRang<-as.circular(seq(0,2*pi,length.out = nYearInt))
+resorRange<-seq(0,1,length.out = nYearInt)
+
+# Resource range
+
+resorRange<-seq(0,1,length.out = nYearInt)
+
+contourData<-do.call(rbind,lapply(timeRang,FUN = dresourDist,
+                                  resource=resorRange,scalar=2,sigma=0.1,
+                                  kappa=1))
+par(plt=posPlot())
+resDist<-~filled.contour(
+  x = as.numeric(timeRang),
+  y = resorRange,
+  z = contourData,
+  plot.axes = {
+    axis(1,
+         at = seq(0, 2 * pi, length.out = 5)[1:4],
+         labels=seasons,cex.axis=0.8,las=2)
+    axis(2, at = seq(0, 1, length.out = 5))
+  },
+  key.axes = axis(4,cex=0.5))
+randResour <-
+  sapply(
+    as.circular(seq(0, 2 * pi, length.out = 12)),
+    rresourDist,
+    scalar = 1,
+    sigma = 0.1,
+    kappa = 1
+  )
+oneSample<-data.table(randResour,time=as.circular(seq(0,2*pi,length.out = 12)))
+oneSample$EnvCue<-EnvCue(oneSample$randResour,sigma = 0.1)
+oneSample$month<-c("January","February","March","April","May","June","July",
+                   "August","September","October","November","December")
+oneSample[,month:=as.factor(month)]
+oneSample[,time:=NULL]
+
+longOneSample<-melt(oneSample,id.vars = "month",
+                    variable.name = "Measure")
+longOneSample[,month:=as.circular(seq(0,2*pi,length.out = 12))[month]]
+seasAng <- as.circular(seq(0,2*pi,length.out = 5))[1:4]
+seasAng<-seasAng+rep((seasAng[2])/2,4)
+
+sampleResCue<-ggplot(longOneSample, aes(x = month, y = value, fill=Measure)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(values=c("#999999", "#E69F00"),
+                    name = "", labels = c("Res. abundance","Env. cue"))+ 
+    coord_polar() + 
+  theme_minimal() +
+  theme(
+    axis.text.x = element_blank() ,
+    axis.title = element_blank(),
+    #panel.grid = element_blank(),
+    plot.margin = unit(rep(0.5,4), "cm"),
+    legend.position="top"
+    
+  ) +
+  annotate(geom="text", x=seasAng, y=max(longOneSample$value), label=seasons,
+           color="red")
+
+plot_grid(resDist, sampleResCue,rel_widths = c(1.5,1), labels = c("A", "B"))  
+
+
+```
+
+The environmentl cue
+The perception of the environmental cue by each individual 
 is prone to errors. So, the mismatch between the perceived cue, and the resource 
 variation not predicted by the environmental cue, could potentially trigger individual
 breeding at the wrong time. Hence, individuals could improve their decision making by 

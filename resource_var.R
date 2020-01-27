@@ -1,44 +1,45 @@
 library("here")
 source(here("..","R_files","posPlots.r"))
 source(here("AccFunc.r"))
+source(here("Aesth.r"))
 library("cplots")
 library("circular")
 library("ggplot2")
-library("tidyverse")
-library("truncnorm")
+# library("tidyverse")
 library("data.table")
+# combine ggplot and base
 library("reshape2")
-seasons<-c("winter", "spring", "summer", "autumn")
-
-colbars<- c('#d7191c','#fdae61','#2b83ba')
+library("cowplot")
 
 # Time intervals
 nYearInt<-48
 timeRang<-as.circular(seq(0,2*pi,length.out = nYearInt))
 # Resource range
+
 resorRange<-seq(0,1,length.out = nYearInt)
 
 contourData<-do.call(rbind,lapply(timeRang,FUN = dresourDist,
                                   resource=resorRange,scalar=2,sigma=0.1,
                                   kappa=1))
 par(plt=posPlot())
-filled.contour(
+resDist<-~filled.contour(
   x = as.numeric(timeRang),
   y = resorRange,
   z = contourData,
   plot.axes = {
     axis(1,
          at = seq(0, 2 * pi, length.out = 5)[1:4],
-         labels=seasons)
+         labels=seasons,cex.axis=0.5,las=2)
     axis(2, at = seq(0, 1, length.out = 5))
-  }
-)
+  },
+  key.axes = axis(4,cex.axis=0.7))
+
 
 randResour <-
   sapply(
     as.circular(seq(0, 2 * pi, length.out = 12)),
     rresourDist,
-    scalar = 1,
+    scalar = 2,
     sigma = 0.1,
     kappa = 1
   )
@@ -91,57 +92,34 @@ BarPlotSolo <-
 BarPlotSolo
 p
 
+seasAng <- as.circular(seq(0,2*pi,length.out = 5))[1:4]
+seasAng<-seasAng+rep((seasAng[2])/2,4)
 
-
-ggplot(longOneSample, aes(month, value, fill=Measure)) +
+sampleResCue<-ggplot(longOneSample, aes(x = month, y = value, fill=Measure)) +
   geom_col(position = "dodge") +
-  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9"))+ 
-  coord_polar() + 
-  ylim(-0.2, 1.5)+
+  scale_fill_manual(values=c("#999999", "#E69F00"),
+                    name = "", labels = c("Res. abundance","Env. cue"))+ 
+    coord_polar() + 
   theme_minimal() +
   theme(
-    axis.text = element_blank(),
+    axis.text.x = element_blank() ,
     axis.title = element_blank(),
-    panel.grid = element_blank(),
-    plot.margin = unit(c(-0,-5,-5,-5), "cm"),
+    #panel.grid = element_blank(),
+    plot.margin = unit(rep(0.5,4), "cm"),
     legend.position="top"
-  ) 
-  
-
-
-p <- ggplot(longOneSample, aes(x=month, y=value, fill=Measure)) +       
-  # Note that id is a factor. If x is numeric, there is some space between the first bar
-  geom_col(position = "dodge") +
-    ylim(-0.5,1.5) +
-  theme_minimal() +
-  theme(
-    axis.text = element_blank(),
-    axis.title = element_blank(),
-    panel.grid = element_blank(),
-    plot.margin = unit(rep(-1,4), "cm") 
+    
   ) +
-  coord_polar(start = 0) 
-   
-labels<-data.frame(y=seq(-0.5,0.5,length.out = 5),
-                   label=as.character(seq(-0.5,0.5,length.out = 5)))
+  annotate(geom="text", x=seasAng, y=max(longOneSample$value), label=seasons,
+           color="red")
 
-ggplot()+
-    geom_bar(data=longOneSample, aes(fill=Measure, y=value, x=month),
-position="dodge", stat="identity")+
-  scale_fill_viridis(discrete = T)+
-      coord_polar(start = 0)+
-    ylim(-0.5,1)+  theme_minimal()  +theme(
-    axis.text = element_blank(),
-    axis.title = element_blank(),
-    panel.grid = element_blank(),
-    plot.margin = unit(rep(-2, 4), "cm")
-    # This remove unnecessary margin around plot
-  ) +scale_fill_discrete(name="",
-                         breaks=c("randResour", "EnvCue"),
-                         labels=c("Resource abundance", "Environmental cue"))+
-  geom_text (data = labels,
-           aes(x = 0.5*pi, y = y, label = label),colour="black")
-  
+
+sampleResCue
+
+plot_grid(resDist, sampleResCue, labels = c("A", "B"),rel_widths = c(1.5,1) )  
+
+
+
+
   
   
   
